@@ -1,0 +1,19 @@
+<Window x:Class="PlasticBrainSim.ReadmeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Plastic Brain Lab - Readme" Height="720" Width="900"
+        MinHeight="450" MinWidth="600" Background="#11151B" Foreground="#E8EDF2">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBox x:Name="ReadmeText" Grid.Row="0" IsReadOnly="True"
+                 FontFamily="Consolas" FontSize="14" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 Background="#151B23" Foreground="#E8EDF2" BorderBrush="#303A46"
+                 Padding="14"/>
+        <Button Grid.Row="1" Content="Schliessen" Width="100" Height="32"
+                HorizontalAlignment="Right" Margin="0,12,0,0" Click="Close_Click"/>
+    </Grid>
+</Window>

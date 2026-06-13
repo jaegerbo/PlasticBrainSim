@@ -1,0 +1,333 @@
+<Window x:Class="PlasticBrainSim.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:PlasticBrainSim"
+        Title="Plastic Brain Lab" Height="920" Width="1320"
+        MinHeight="740" MinWidth="1050"
+        Background="#11151B" Foreground="#E8EDF2">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Row="0" Background="#ECECEC" Foreground="Black">
+            <MenuItem Header="Datei">
+                <MenuItem Header="Aktuellen Agent speichern" IsEnabled="False"/>
+                <MenuItem Header="Agent laden" IsEnabled="False"/>
+            </MenuItem>
+            <MenuItem Header="Info">
+                <MenuItem Header="Readme anzeigen" Click="ShowReadme_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid Grid.Row="1" Margin="14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="160"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button x:Name="StartPauseButton" Content="Start" Width="90" Height="34"
+                            Margin="0,0,8,0" Click="StartPause_Click"/>
+                    <Button Content="Einzelschritt" Width="105" Height="34"
+                            Margin="0,0,8,0" Click="SingleStep_Click"/>
+                    <Button Content="Neustart" Width="90" Height="34"
+                            Margin="0,0,18,0" Click="Reset_Click"/>
+                    <TextBlock Text="Tempo" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Slider x:Name="SpeedSlider" Minimum="1" Maximum="40" Value="3"
+                            Width="170" TickFrequency="1" IsSnapToTickEnabled="True"
+                            ValueChanged="SpeedSlider_ValueChanged"/>
+                    <TextBlock x:Name="SpeedText" Text="3x" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
+                <TextBlock Text="Raeumliches Netz mit lokaler und struktureller Plastizitaet"
+                           FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.05*"/>
+                    <ColumnDefinition Width="0.95*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Margin="0,0,8,0" BorderBrush="#303A46"
+                        BorderThickness="1" CornerRadius="6" Background="#0B0F14" ClipToBounds="True">
+                    <local:SimulationView x:Name="WorldView" DisplayMode="World"/>
+                </Border>
+
+                <TabControl Grid.Column="1" Margin="8,0,0,0" Background="#151B23" BorderBrush="#303A46">
+                    <TabItem Header="Agentstatus" IsSelected="True">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#151B23" Foreground="White">
+                            <Grid x:Name="AgentStatusPanel" Margin="18">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.ColumnSpan="2" Text="Identitaet und Koerper" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Text="Name"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Name, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="2" Text="Geschlecht"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Gender, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="3" Text="Lebenspunkte"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Body.LifePoint, Mode=OneWay, StringFormat=F1}"/>
+                                <TextBlock Grid.Row="4" Text="Damage"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Damage, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="5" Text="Position"/><TextBlock x:Name="AgentPositionText" Grid.Row="5" Grid.Column="1"/>
+                                <TextBlock Grid.Row="6" Text="Sichtwinkel"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding VisionAngleDegrees, Mode=OneWay, StringFormat={}{0:F1} Grad}"/>
+                                <TextBlock Grid.Row="7" Text="Sichtreichweite"/><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding VisionRange, Mode=OneWay, StringFormat=F3}"/>
+
+                                <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="Lernen und Verhalten" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8"/>
+                                <TextBlock Grid.Row="9" Text="Neuronen"/><TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding Brain.Neurons.Count, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="10" Text="Synapsen"/><TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Brain.SynapseCount, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="11" Text="Neuigkeit"/><TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding LastNovelty, Mode=OneWay, StringFormat=F3}"/>
+                                <TextBlock Grid.Row="12" Text="Belohnung"/><TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding LastReward, Mode=OneWay, StringFormat=F3}"/>
+                                <TextBlock Grid.Row="13" Text="Regelaktion"/><TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding LastRuleAction, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="14" Text="Motivationen"/><TextBlock Grid.Row="14" Grid.Column="1" Text="{Binding MotivationNames, Mode=OneWay}" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Row="15" Text="Erinnerungen"/><TextBlock Grid.Row="15" Grid.Column="1" Text="{Binding Memory.WorldObjects.Count, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="16" Text="Regeln"/><TextBlock Grid.Row="16" Grid.Column="1" Text="{Binding Rules.Rules.Count, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="17" Text="Nahrung / Schaden"/><TextBlock x:Name="AgentExperienceText" Grid.Row="17" Grid.Column="1"/>
+                                <TextBlock Grid.Row="18" Text="Netz allein"/>
+                                <TextBlock Grid.Row="18" Grid.Column="1">
+                                    <Run Text="{Binding NetworkDecisionPercent, Mode=OneWay, StringFormat={}{0:F1}%}"/>
+                                    <Run Text="  ("/>
+                                    <Run Text="{Binding NetworkOnlyDecisionCount, Mode=OneWay}"/>
+                                    <Run Text=" Schritte)"/>
+                                </TextBlock>
+                                <TextBlock Grid.Row="19" Text="Regel beteiligt"/>
+                                <TextBlock Grid.Row="19" Grid.Column="1">
+                                    <Run Text="{Binding RuleDecisionPercent, Mode=OneWay, StringFormat={}{0:F1}%}"/>
+                                    <Run Text="  ("/>
+                                    <Run Text="{Binding RuleInfluencedDecisionCount, Mode=OneWay}"/>
+                                    <Run Text=" Schritte)"/>
+                                </TextBlock>
+
+                                <TabControl Grid.Row="20" Grid.ColumnSpan="2" Margin="0,14,0,0"
+                                            Background="#151B23" BorderBrush="#303A46">
+                                    <TabItem Header="Regeln">
+                                        <ItemsControl ItemsSource="{Binding Rules.Rules, Mode=OneWay}" Margin="8">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,3" Padding="10" Background="#1B232D"
+                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="54"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Width="38" Height="38" CornerRadius="4"
+                                                                    BorderBrush="#C0CAD4" BorderThickness="1">
+                                                                <Border.Background>
+                                                                    <MultiBinding Converter="{StaticResource ObjectColorBrushConverter}">
+                                                                        <Binding Path="Color.Red" Mode="OneWay"/>
+                                                                        <Binding Path="Color.Green" Mode="OneWay"/>
+                                                                        <Binding Path="Color.Blue" Mode="OneWay"/>
+                                                                    </MultiBinding>
+                                                                </Border.Background>
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1">
+                                                                <TextBlock Text="{Binding Description, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                                <TextBlock Foreground="#B9C4CF" Margin="0,3,0,0">
+                                                                    <Run Text="Farbe: "/><Run Text="{Binding ColorText, Mode=OneWay}"/>
+                                                                    <Run Text="  ("/><Run Text="{Binding ColorToleranceText, Mode=OneWay}"/><Run Text=")"/>
+                                                                </TextBlock>
+                                                                <TextBlock Foreground="#B9C4CF">
+                                                                    <Run Text="Groessenbereich: "/><Run Text="{Binding SizeRangeText, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                                <TextBlock Foreground="#B9C4CF">
+                                                                    <Run Text="Staerke: "/><Run Text="{Binding Strength, Mode=OneWay, StringFormat=F2}"/>
+                                                                    <Run Text="   Belege: "/><Run Text="{Binding EvidenceCount, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                                <TextBlock Foreground="#8996A5" FontSize="11">
+                                                                    <Run Text="Erstellt bei Schritt "/><Run Text="{Binding CreatedAtStep, Mode=OneWay}"/>
+                                                                    <Run Text="   zuletzt bestaetigt "/><Run Text="{Binding LastConfirmedStep, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </TabItem>
+                                    <TabItem Header="Erinnerungen">
+                                        <ItemsControl ItemsSource="{Binding Memory.WorldObjects, Mode=OneWay}" Margin="8">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,3" Padding="10" Background="#1B232D"
+                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="54"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Width="38" Height="38" CornerRadius="4"
+                                                                    BorderBrush="#C0CAD4" BorderThickness="1">
+                                                                <Border.Background>
+                                                                    <MultiBinding Converter="{StaticResource ObjectColorBrushConverter}">
+                                                                        <Binding Path="Color.Red" Mode="OneWay"/>
+                                                                        <Binding Path="Color.Green" Mode="OneWay"/>
+                                                                        <Binding Path="Color.Blue" Mode="OneW…14089 tokens truncated…nt.IsAlive;
+
+            agent.CompleteStep(new AgentStepOutcome(
+                lifePointBefore,
+                agent.Body.LifePoint,
+                foodCollected,
+                hazardHit,
+                died));
+        }
+
+        StepCount++;
+    }
+
+    private Agent CreateAgent(string name, AgentGender gender)
+    {
+        var neuronCount = _random.Next(
+            Values.AgentMinimumNeuronCount,
+            Values.AgentMaximumInitialNeuronCount + 1);
+        return new Agent(name, gender, RandomPosition(Values.SpawnMargin), neuronCount, _random.Next(), Values)
+        {
+            Body = { Heading = (float)(_random.NextDouble() * Math.Tau) }
+        };
+    }
+
+    private (bool foodCollected, bool hazardHit) ResolveInteractions(Agent agent)
+    {
+        var foodCollected = false;
+        var hazardHit = false;
+
+        foreach (var item in Objects)
+        {
+            if (Vector2.Distance(agent.Body.Position, item.Position) > agent.Body.Radius + item.Radius)
+                continue;
+
+            if (item.Kind == ObjectKind.Food)
+            {
+                var beforeFood = agent.Body.LifePoint;
+                agent.Body.LifePoint = MathF.Min(
+                    Values.AgentMaximumLifePoint,
+                    agent.Body.LifePoint + item.Food);
+                agent.Rules.LearnFromContact(
+                    item,
+                    agent.Body.LifePoint - beforeFood,
+                    StepCount);
+                foodCollected = true;
+                agent.Memory.Forget(item.Id);
+                ResetObject(item);
+                continue;
+            }
+
+            hazardHit = true;
+
+            // The hazard attacks first. A dead agent can no longer retaliate.
+            var beforeDamage = agent.Body.LifePoint;
+            agent.Body.LifePoint = MathF.Max(0f, agent.Body.LifePoint - item.Damage);
+            agent.Rules.LearnFromContact(
+                item,
+                agent.Body.LifePoint - beforeDamage,
+                StepCount);
+            if (!agent.IsAlive)
+            {
+                item.Position = RandomPosition(Values.ObjectSpawnMargin);
+                break;
+            }
+
+            item.LifePoint = Math.Max(0, item.LifePoint - agent.Damage);
+            if (item.LifePoint == 0)
+            {
+                agent.Body.LifePoint = MathF.Min(
+                    Values.AgentMaximumLifePoint,
+                    agent.Body.LifePoint + item.Food);
+                foodCollected = true;
+                agent.Memory.Forget(item.Id);
+                ResetObject(item);
+                continue;
+            }
+
+            item.Position = RandomPosition(Values.ObjectSpawnMargin);
+            agent.Body.Heading += Values.AgentHazardTurn;
+        }
+
+        return (foodCollected, hazardHit);
+    }
+
+    private WorldObject CreateObject(ObjectKind kind)
+    {
+        var item = new WorldObject(
+            kind,
+            RandomPosition(Values.ObjectSpawnMargin),
+            food: Values.FoodValueMinimum);
+        ResetObject(item, keepPosition: true);
+        return item;
+    }
+
+    private void ResetObject(WorldObject item, bool keepPosition = false)
+    {
+        if (item.Kind == ObjectKind.Hazard)
+        {
+            item.Food = _random.Next(Values.HazardFoodMinimum, Values.HazardFoodMaximum + 1);
+            item.LifePoint = _random.Next(
+                Values.HazardLifePointMinimum,
+                Values.HazardLifePointMaximum + 1);
+            item.Damage = _random.Next(Values.HazardDamageMinimum, Values.HazardDamageMaximum + 1);
+            item.Color = RandomColor(
+                Values.HazardColorRed,
+                Values.HazardColorGreen,
+                Values.HazardColorBlue);
+        }
+        else
+        {
+            item.Food = _random.Next(Values.FoodValueMinimum, Values.FoodValueMaximum + 1);
+            item.LifePoint = 0;
+            item.Damage = 0;
+            item.Color = RandomColor(
+                Values.FoodColorRed,
+                Values.FoodColorGreen,
+                Values.FoodColorBlue);
+        }
+
+        item.Size = CalculateObjectSize(item);
+
+        if (!keepPosition) item.Position = RandomPosition(Values.ObjectSpawnMargin);
+    }
+
+    private Vector2 RandomPosition(float margin) => new(
+        margin + (float)_random.NextDouble() * (1f - 2f * margin),
+        margin + (float)_random.NextDouble() * (1f - 2f * margin));
+
+    private float CalculateObjectSize(WorldObject item)
+    {
+        var minimumFood = item.Kind == ObjectKind.Food
+            ? Values.FoodValueMinimum
+            : Values.HazardFoodMinimum;
+        var maximumFood = item.Kind == ObjectKind.Food
+            ? Values.FoodValueMaximum
+            : Values.HazardFoodMaximum;
+        var normalized = (item.Food - minimumFood) / (float)Math.Max(1, maximumFood - minimumFood);
+        var radius = Values.ObjectRadiusMinimum +
+                     normalized * (Values.ObjectRadiusMaximum - Values.ObjectRadiusMinimum);
+        return radius * 2f;
+    }
+
+    private ObjectColor RandomColor(byte red, byte green, byte blue) => new(
+        VaryColor(red),
+        VaryColor(green),
+        VaryColor(blue));
+
+    private byte VaryColor(byte value) => (byte)Math.Clamp(
+        value + _random.Next(-Values.ObjectColorVariation, Values.ObjectColorVariation + 1),
+        byte.MinValue,
+        byte.MaxValue);
+}
