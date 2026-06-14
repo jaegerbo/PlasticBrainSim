@@ -62,7 +62,7 @@ public sealed class SimulationView : FrameworkElement
         {
             var center = Map(item.Position, rect);
             var radius = item.Radius * rect.Width;
-            dc.DrawEllipse(new SolidColorBrush(ToMediaColor(item.Color)), null, center, radius, radius);
+            DrawShape(dc, item.Shape, new SolidColorBrush(ToMediaColor(item.Color)), null, center, radius);
         }
 
         foreach (var agent in engine.Agents)
@@ -141,7 +141,7 @@ public sealed class SimulationView : FrameworkElement
             var pen = new Pen(new SolidColorBrush(color), 1.4) { DashStyle = DashStyles.Dash };
             var center = Map(memory.Position, rect);
             var radius = Math.Max(4, memory.Size * rect.Width / 2f);
-            dc.DrawEllipse(null, pen, center, radius, radius);
+            DrawShape(dc, memory.Shape, null, pen, center, radius);
         }
     }
 
@@ -151,31 +151,63 @@ public sealed class SimulationView : FrameworkElement
         var brain = SelectedAgent?.Brain ?? Engine!.Agents.FirstOrDefault()?.Brain;
         if (brain is null) return;
 
-        foreach (var source in brain.Neurons)
+        var inputs = Enumerable.Range(0, brain.InputNeuronCount)
+            .Select(index => new Point(rect.X + rect.Width * 0.12, rect.Y + rect.Height * (index + 1) / (brain.InputNeuronCount + 1)))
+            .ToArray();
+        var hidden = Enumerable.Range(0, brain.HiddenNeuronCount)
+            .Select(index => new Point(rect.X + rect.Width * 0.52, rect.Y + rect.Height * (index + 1) / (brain.HiddenNeuronCount + 1)))
+            .ToArray();
+        var output = new Point(rect.X + rect.Width * 0.88, rect.Y + rect.Height * 0.5);
+
+        for (var h = 0; h < brain.HiddenNeuronCount; h++)
         {
-            foreach (var synapse in source.Outgoing)
-            {
-                if (MathF.Abs(synapse.Weight) < 0.08f) continue;
-                var alpha = (byte)Math.Clamp(18 + MathF.Abs(synapse.Weight) * 45, 18, 120);
-                var color = synapse.Weight >= 0
-                    ? Color.FromArgb(alpha, 80, 170, 255)
-                    : Color.FromArgb(alpha, 255, 105, 100);
-                dc.DrawLine(new Pen(new SolidColorBrush(color), 0.65),
-                    Map(source.Position, rect), Map(brain.Neurons[synapse.Target].Position, rect));
-            }
+            for (var i = 0; i < brain.InputNeuronCount; i++)
+                DrawWeight(dc, inputs[i], hidden[h], brain.InputWeights[h][i]);
+            DrawWeight(dc, hidden[h], output, brain.OutputWeights[h]);
+        }
+        foreach (var point in inputs) dc.DrawEllipse(Brushes.MediumSeaGreen, null, point, 4, 4);
+        foreach (var point in hidden) dc.DrawEllipse(Brushes.SteelBlue, null, point, 4, 4);
+        dc.DrawEllipse(Brushes.Goldenrod, null, output, 6, 6);
+        DrawTitle(dc, $"Erfahrungen: {brain.ExperienceCount}", rect.X + 8, rect.Bottom - 24);
+    }
+
+    private static void DrawWeight(DrawingContext dc, Point start, Point end, float weight)
+    {
+        var alpha = (byte)Math.Clamp(20 + MathF.Abs(weight) * 100, 20, 150);
+        var color = weight >= 0
+            ? Color.FromArgb(alpha, 80, 170, 255)
+            : Color.FromArgb(alpha, 255, 105, 100);
+        dc.DrawLine(new Pen(new SolidColorBrush(color), 0.8), start, end);
+    }
+
+    private static void DrawShape(
+        DrawingContext dc,
+        ObjectShape shape,
+        Brush? fill,
+        Pen? pen,
+        Point center,
+        double radius)
+    {
+        if (shape == ObjectShape.Circle)
+        {
+            dc.DrawEllipse(fill, pen, center, radius, radius);
+            return;
+        }
+        if (shape == ObjectShape.Square)
+        {
+            dc.DrawRectangle(fill, pen, new Rect(center.X - radius, center.Y - radius, radius * 2, radius * 2));
+            return;
         }
 
-        foreach (var neuron in brain.Neurons)
+        var geometry = new StreamGeometry();
+        using (var context = geometry.Open())
         {
-            var magnitude = MathF.Abs(neuron.Activation);
-            var color = neuron.Id < PlasticNetwork.InputCount
-                ? Color.FromRgb(74, 205, 150)
-                : neuron.Id >= brain.OutputStart
-                    ? Color.FromRgb(255, 194, 86)
-                    : Color.FromRgb((byte)(75 + magnitude * 160), (byte)(87 + magnitude * 120), 190);
-            var radius = neuron.Id < PlasticNetwork.InputCount || neuron.Id >= brain.OutputStart ? 3.4 : 1.5 + magnitude * 2.1;
-            dc.DrawEllipse(new SolidColorBrush(color), null, Map(neuron.Position, rect), radius, radius);
+            context.BeginFigure(new Point(center.X, center.Y - radius), true, true);
+            context.LineTo(new Point(center.X + radius, center.Y + radius), true, false);
+            context.LineTo(new Point(center.X - radius, center.Y + radius), true, false);
         }
+        geometry.Freeze();
+        dc.DrawGeometry(fill, pen, geometry);
     }
 
     private static Point Map(Vector2 value, Rect rect) =>

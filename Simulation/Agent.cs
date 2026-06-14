@@ -11,49 +11,44 @@ public enum AgentGender
 
 public sealed class Agent
 {
-    private readonly Random _random;
     private readonly Values _values;
-    private readonly float[] _inputs = new float[PlasticNetwork.InputCount];
-    private readonly float[] _previousInputs = new float[PlasticNetwork.InputCount];
     private readonly List<WorldObject> _visibleObjects = [];
     private readonly MemoryPathPlanner _pathPlanner;
     private int _pathAge;
     private int _waypointIndex;
 
-    public Agent(string name, AgentGender gender, Vector2 position, int neuronCount, int seed, Values values)
+    public Agent(string name, AgentGender gender, Vector2 position, int hiddenNeuronCount, int seed, Values values)
     {
-        if (neuronCount < values.AgentMinimumNeuronCount)
-            throw new ArgumentOutOfRangeException(nameof(neuronCount),
-                $"An agent needs at least {values.AgentMinimumNeuronCount} neurons.");
-        if (values.SensorRayCount * 2 + 3 != PlasticNetwork.InputCount)
-            throw new ArgumentException("SensorRayCount does not match the fixed network inputs.", nameof(values));
-
         _values = values;
         Name = name;
         Gender = gender;
         Body = new AgentBody(values) { Position = position };
-        Brain = new PlasticNetwork(neuronCount, seed, values);
+        Networks = AgentNetworks.CreateDefault(hiddenNeuronCount, seed, values);
         Memory = new AgentMemory(values);
         Rules = new RuleMemory(values);
+        ExplorationMap = new ExplorationMap(values);
         _pathPlanner = new MemoryPathPlanner(values);
-        _random = new Random(seed ^ 0x5f3759df);
-        Damage = _random.Next(values.AgentDamageMinimum, values.AgentDamageMaximum + 1);
-        VisionRange = RandomBetween(values.SensorRangeMinimum, values.SensorRangeMaximum);
+        var random = new Random(seed ^ 0x5f3759df);
+        Damage = random.Next(values.AgentDamageMinimum, values.AgentDamageMaximum + 1);
+        VisionRange = RandomBetween(random, values.SensorRangeMinimum, values.SensorRangeMaximum);
         VisionAngleDegrees = RandomBetween(
+            random,
             values.SensorFieldOfViewMinimumDegrees,
             values.SensorFieldOfViewMaximumDegrees);
     }
 
-    public string Name { get; }
-    public AgentGender Gender { get; }
+    public string Name { get; private set; }
+    public AgentGender Gender { get; private set; }
     public AgentBody Body { get; }
-    public PlasticNetwork Brain { get; }
+    public AgentNetworks Networks { get; }
+    public SemanticNetwork Brain => Networks.Meaning;
     public AgentMemory Memory { get; }
     public RuleMemory Rules { get; }
+    public ExplorationMap ExplorationMap { get; }
     public List<Motivation> Motivations { get; } = [];
-    public int Damage { get; }
-    public float VisionRange { get; }
-    public float VisionAngleDegrees { get; }
+    public int Damage { get; private set; }
+    public float VisionRange { get; private set; }
+    public float VisionAngleDegrees { get; private set; }
     public float VisionAngleRadians => VisionAngleDegrees * MathF.PI / 180f;
     public float MaximumLifePoint => _values.AgentMaximumLifePoint;
     public bool IsAlive => Body.LifePoint > 0;
@@ -61,8 +56,12 @@ public sealed class Agent
     public int HazardHits { get; private set; }
     public float LastNovelty { get; private set; }
     public float LastReward { get; private set; }
-    public string MotivationNames => string.Join(", ", Motivations.Select(m => m.Name));
+    public string MotivationNames => string.Join(", ", Motivations
+        .OrderByDescending(motivation => motivation.LastActivity)
+        .Select(motivation => $"{motivation.Name} ({motivation.LastActivity:F2})"));
+    public string ActiveMotivationName { get; private set; } = "-";
     public string LastRuleAction { get; private set; } = "-";
+    public SemanticTrainingResult? LastTraining { get; private set; }
     public long MovementDecisionCount { get; private set; }
     public long RuleInfluencedDecisionCount { get; private set; }
     public long NetworkOnlyDecisionCount
@@ -77,145 +76,251 @@ public sealed class Agent
     public PathPlan? CurrentPlan { get; private set; }
     public string CurrentTargetText => CurrentPlan is null
         ? "-"
-        : $"Gelerntes Ziel, Nutzen {CurrentPlan.Utility:F2}";
+        : $"{CurrentPlan.Target.MotivationName}, Nutzen {CurrentPlan.Target.Utility:F2}";
 
     public void Observe(IReadOnlyList<WorldObject> objects, long stepNumber)
     {
         Memory.BeginStep();
         _visibleObjects.Clear();
         _visibleObjects.AddRange(VisibleObjects(objects));
+        ExplorationMap.Observe(Body.Position, stepNumber);
+
         foreach (var item in _visibleObjects)
         {
+            ExplorationMap.Observe(item.Position, stepNumber);
             Memory.Remember(item, stepNumber);
+            var memory = Memory.WorldObjects.First(entry => entry.ObjectId == item.Id);
+            var network = Brain.Assess(item.Color, item.Shape, item.Size);
+            var rule = Rules.Assess(item.Color, item.Shape, item.Size);
+            memory.NetworkValence = network.Valence;
+            memory.NetworkConfidence = network.Confidence;
+            memory.MeaningVector = network.MeaningVector;
+            memory.LearnedBehavior = rule?.Behavior;
+            memory.LearnedConfidence = rule?.Strength ?? network.Confidence;
+            Rules.ApplyNetworkHypothesis(
+                item.Color,
+                item.Shape,
+                item.Size,
+                network.Valence,
+                network.Confidence,
+                stepNumber);
         }
 
-        Array.Clear(_inputs);
-        var rayIndex = 0;
-        foreach (var ray in SensorRays(objects))
-        {
-            var distance = Vector2.Distance(ray.start, ray.end);
-            var strength = ray.hit is null ? 0f : 1f - distance / VisionRange;
-            _inputs[rayIndex] = ray.hit == ObjectKind.Food ? strength : 0f;
-            _inputs[_values.SensorRayCount + rayIndex] = ray.hit == ObjectKind.Hazard ? strength : 0f;
-            rayIndex++;
-        }
-
-        var stateInput = _values.SensorRayCount * 2;
-        _inputs[stateInput] = Body.LifePoint / _values.AgentMaximumLifePoint;
-        _inputs[stateInput + 1] = Body.LeftMotor;
-        _inputs[stateInput + 2] = Body.RightMotor;
-
-        var difference = 0f;
-        for (var i = 0; i < _values.SensorRayCount * 2; i++)
-        {
-            difference += MathF.Abs(_inputs[i] - _previousInputs[i]);
-        }
-        LastNovelty = Math.Clamp(difference / _values.NoveltyDivisor, 0f, 1f);
+        LastNovelty = _visibleObjects.Count == 0
+            ? 0f
+            : _visibleObjects.Average(item =>
+                1f - Brain.Assess(item.Color, item.Shape, item.Size).Confidence);
     }
 
     public void ThinkAndMove()
     {
         if (!IsAlive) return;
 
-        var (left, right) = Brain.Step(_inputs, LastReward, LastNovelty);
-        Body.LeftMotor = left;
-        Body.RightMotor = right;
-
         UpdatePlan();
-        var exploratoryTurn = ((float)_random.NextDouble() * 2f - 1f) * _values.AgentExplorationTurn;
-        Body.Heading += (right - left) * _values.AgentMotorTurnFactor + exploratoryTurn;
         ApplyPlannedMovement();
-        var ruleInfluencedMovement = ApplyRuleKnowledge();
+        var ruleInfluencedMovement = ApplyAvoidanceRule();
         MovementDecisionCount++;
         if (ruleInfluencedMovement) RuleInfluencedDecisionCount++;
 
-        var speed = _values.AgentBaseSpeed +
-                    MathF.Max(0f, (left + right + 2f) * 0.5f) * _values.AgentMotorSpeedFactor;
         var direction = new Vector2(MathF.Cos(Body.Heading), MathF.Sin(Body.Heading));
-        Body.Position += direction * speed;
+        Body.LeftMotor = 1f;
+        Body.RightMotor = 1f;
+        Body.Position += direction * (_values.AgentBaseSpeed + _values.AgentMotorSpeedFactor);
+        KeepInsideWorld();
+    }
 
-        if (Body.Position.X < Body.Radius || Body.Position.X > 1f - Body.Radius)
+    public void LearnFromContact(WorldObject item, float experiencedEffect, long stepNumber)
+    {
+        Rules.LearnFromContact(item, experiencedEffect, stepNumber);
+        var targetValence = Math.Clamp(experiencedEffect / MaximumLifePoint, -1f, 1f);
+        LastTraining = Brain.Train(item.Color, item.Shape, item.Size, targetValence);
+
+        foreach (var memory in Memory.WorldObjects)
         {
-            Body.Heading = MathF.PI - Body.Heading;
-            Body.Position = new Vector2(Math.Clamp(Body.Position.X, Body.Radius, 1f - Body.Radius), Body.Position.Y);
+            var assessment = Brain.Assess(memory.Color, memory.Shape, memory.Size);
+            memory.NetworkValence = assessment.Valence;
+            memory.NetworkConfidence = assessment.Confidence;
+            memory.MeaningVector = assessment.MeaningVector;
+            Rules.ApplyNetworkHypothesis(
+                memory.Color,
+                memory.Shape,
+                memory.Size,
+                assessment.Valence,
+                assessment.Confidence,
+                stepNumber);
         }
-        if (Body.Position.Y < Body.Radius || Body.Position.Y > 1f - Body.Radius)
-        {
-            Body.Heading = -Body.Heading;
-            Body.Position = new Vector2(Body.Position.X, Math.Clamp(Body.Position.Y, Body.Radius, 1f - Body.Radius));
-        }
+        _pathAge = _values.PathRecalculationInterval;
     }
 
     private void UpdatePlan()
     {
         _pathAge++;
-        var targetStillRemembered = CurrentPlan is not null &&
-            Memory.WorldObjects.Contains(CurrentPlan.Target);
-        if (_pathAge < _values.PathRecalculationInterval && targetStillRemembered) return;
+        if (CurrentPlan is not null &&
+            Vector2.Distance(Body.Position, CurrentPlan.Target.Position) <=
+            _values.PathWaypointReachedDistance)
+        {
+            CurrentPlan.Target.Memory?.Let(memory => memory.IsCurrentTarget = false);
+            CurrentPlan = null;
+        }
 
-        CurrentPlan = _pathPlanner.FindBestPlan(
-            Body.Position,
-            Body.LifePoint,
-            MaximumLifePoint,
-            Memory.WorldObjects,
-            Rules);
+        var currentMemoryExists = CurrentPlan?.Target.Memory is null ||
+            Memory.WorldObjects.Contains(CurrentPlan.Target.Memory);
+        if (_pathAge < _values.PathRecalculationInterval && CurrentPlan is not null && currentMemoryExists)
+            return;
+
+        foreach (var memory in Memory.WorldObjects)
+        {
+            memory.IsCurrentTarget = false;
+            memory.EvaluatedUtility = 0f;
+        }
+
+        var activeMotivation = Motivations
+            .Select(motivation => (motivation, activity: motivation.MeasureActivity(this)))
+            .Where(entry => entry.activity > 0f)
+            .OrderByDescending(entry => entry.activity)
+            .FirstOrDefault();
+        ActiveMotivationName = activeMotivation.motivation?.Name ?? "-";
+        if (activeMotivation.motivation is null)
+        {
+            CurrentPlan = null;
+            return;
+        }
+
+        var candidates = activeMotivation.motivation.ProposeTargets(this).ToList();
+        var candidate = candidates.OrderByDescending(target => target.Utility).FirstOrDefault();
+        if (candidate is null)
+        {
+            CurrentPlan = null;
+            return;
+        }
+
+        var currentCandidate = CurrentPlan is null
+            ? null
+            : candidates.FirstOrDefault(target =>
+                ReferenceEquals(target.Memory, CurrentPlan.Target.Memory) &&
+                (target.Memory is not null || Vector2.Distance(target.Position, CurrentPlan.Target.Position) < 0.001f));
+        var currentUtility = currentCandidate?.Utility ?? CurrentPlan?.Target.Utility ?? float.NegativeInfinity;
+        var sameTarget = CurrentPlan is not null &&
+            (candidate.Memory is not null
+                ? ReferenceEquals(candidate.Memory, CurrentPlan.Target.Memory)
+                : CurrentPlan.Target.Memory is null &&
+                  Vector2.Distance(candidate.Position, CurrentPlan.Target.Position) < 0.001f);
+        var motivationChanged = CurrentPlan?.Target.MotivationName != candidate.MotivationName;
+        var currentInvalid = CurrentPlan is null || !currentMemoryExists;
+        var betterTarget = CurrentPlan is not null && candidate.Utility > currentUtility &&
+            !sameTarget;
+        if (currentInvalid || motivationChanged || betterTarget)
+        {
+            var plan = _pathPlanner.FindPath(Body.Position, candidate, Memory.WorldObjects);
+            if (plan is not null)
+            {
+                CurrentPlan = plan;
+                _waypointIndex = 0;
+            }
+        }
+        else if (currentCandidate is not null && CurrentPlan is not null)
+        {
+            CurrentPlan = new PathPlan(currentCandidate, CurrentPlan.Waypoints);
+        }
+
+        CurrentPlan?.Target.Memory?.Let(memory => memory.IsCurrentTarget = true);
         _pathAge = 0;
-        _waypointIndex = 0;
     }
 
     private void ApplyPlannedMovement()
     {
         if (CurrentPlan is null || CurrentPlan.Waypoints.Count == 0) return;
-
         while (_waypointIndex < CurrentPlan.Waypoints.Count - 1 &&
                Vector2.Distance(Body.Position, CurrentPlan.Waypoints[_waypointIndex]) <=
                _values.PathWaypointReachedDistance)
-        {
             _waypointIndex++;
-        }
 
-        var waypoint = CurrentPlan.Waypoints[_waypointIndex];
-        var offset = waypoint - Body.Position;
-        var targetAngle = MathF.Atan2(offset.Y, offset.X);
-        var angleDifference = MathF.Atan2(
-            MathF.Sin(targetAngle - Body.Heading),
-            MathF.Cos(targetAngle - Body.Heading));
-        Body.Heading += Math.Clamp(angleDifference, -_values.PathTurnFactor, _values.PathTurnFactor);
+        TurnTowards(CurrentPlan.Waypoints[_waypointIndex], _values.PathTurnFactor);
     }
 
-    private bool ApplyRuleKnowledge()
+    private bool ApplyAvoidanceRule()
     {
-        RuleBehavior? requiredBehavior = CurrentPlan is null ? null : RuleBehavior.Avoid;
-        var match = Rules.FindBestMatch(_visibleObjects, Body.Position, requiredBehavior);
+        var match = Rules.FindBestMatch(_visibleObjects, Body.Position, RuleBehavior.Avoid);
         if (match is null)
         {
             LastRuleAction = "-";
             return false;
         }
+        var away = Body.Position - match.Object.Position;
+        TurnTowards(Body.Position + away, _values.RuleTurnFactor * match.Rule.Strength);
+        LastRuleAction = "Meiden";
+        return true;
+    }
 
-        var target = match.Object.Position - Body.Position;
-        var targetAngle = MathF.Atan2(target.Y, target.X);
-        if (match.Rule.Behavior == RuleBehavior.Avoid) targetAngle += MathF.PI;
-
-        var angleDifference = MathF.Atan2(
+    private void TurnTowards(Vector2 target, float maximumTurn)
+    {
+        var offset = target - Body.Position;
+        var targetAngle = MathF.Atan2(offset.Y, offset.X);
+        var difference = MathF.Atan2(
             MathF.Sin(targetAngle - Body.Heading),
             MathF.Cos(targetAngle - Body.Heading));
-        var maximumTurn = _values.RuleTurnFactor * match.Rule.Strength;
-        Body.Heading += Math.Clamp(angleDifference, -maximumTurn, maximumTurn);
-        LastRuleAction = match.Rule.Behavior == RuleBehavior.Avoid ? "Meiden" : "Annaehern";
-        return true;
+        Body.Heading += Math.Clamp(difference, -maximumTurn, maximumTurn);
+    }
+
+    private void KeepInsideWorld()
+    {
+        if (Body.Position.X < Body.Radius || Body.Position.X > 1f - Body.Radius)
+        {
+            Body.Heading = MathF.PI - Body.Heading;
+            Body.Position = new Vector2(
+                Math.Clamp(Body.Position.X, Body.Radius, 1f - Body.Radius),
+                Body.Position.Y);
+        }
+        if (Body.Position.Y < Body.Radius || Body.Position.Y > 1f - Body.Radius)
+        {
+            Body.Heading = -Body.Heading;
+            Body.Position = new Vector2(
+                Body.Position.X,
+                Math.Clamp(Body.Position.Y, Body.Radius, 1f - Body.Radius));
+        }
     }
 
     public void CompleteStep(AgentStepOutcome outcome)
     {
         if (outcome.FoodCollected) FoodCollected++;
         if (outcome.HazardHit) HazardHits++;
+        LastReward = Math.Clamp(
+            (outcome.LifePointAfter - outcome.LifePointBefore) / MaximumLifePoint,
+            -1f,
+            1f);
+    }
 
-        LastReward = Motivations.Count == 0
-            ? 0f
-            : Math.Clamp(Motivations.Sum(m => m.Evaluate(this, outcome) * m.Weight), -1f, 1f);
+    public void RestoreScalarState(
+        string name,
+        AgentGender gender,
+        int damage,
+        float visionRange,
+        float visionAngleDegrees,
+        int foodCollected,
+        int hazardHits,
+        float lastNovelty,
+        float lastReward,
+        long movementDecisionCount,
+        long ruleInfluencedDecisionCount)
+    {
+        Name = name;
+        Gender = gender;
+        Damage = damage;
+        VisionRange = visionRange;
+        VisionAngleDegrees = visionAngleDegrees;
+        FoodCollected = foodCollected;
+        HazardHits = hazardHits;
+        LastNovelty = lastNovelty;
+        LastReward = lastReward;
+        MovementDecisionCount = movementDecisionCount;
+        RuleInfluencedDecisionCount = ruleInfluencedDecisionCount;
+    }
 
-        Array.Copy(_inputs, _previousInputs, _inputs.Length);
+    public void RestorePlan(TargetCandidate target, IReadOnlyList<Vector2> waypoints)
+    {
+        CurrentPlan = new PathPlan(target, waypoints);
+        _waypointIndex = 0;
+        _pathAge = 0;
     }
 
     public IEnumerable<(Vector2 start, Vector2 end, ObjectKind? hit)> SensorRays(
@@ -229,7 +334,6 @@ public sealed class Agent
             var direction = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
             var bestDistance = VisionRange;
             ObjectKind? kind = null;
-
             foreach (var item in objects)
             {
                 var projection = Vector2.Dot(item.Position - Body.Position, direction);
@@ -241,7 +345,6 @@ public sealed class Agent
                     kind = item.Kind;
                 }
             }
-
             yield return (Body.Position, Body.Position + direction * bestDistance, kind);
         }
     }
@@ -250,21 +353,18 @@ public sealed class Agent
     {
         var facing = new Vector2(MathF.Cos(Body.Heading), MathF.Sin(Body.Heading));
         var minimumDot = MathF.Cos(VisionAngleRadians / 2f);
-
         foreach (var item in objects)
         {
             var offset = item.Position - Body.Position;
             var distance = offset.Length();
             if (distance > VisionRange + item.Radius) continue;
             if (distance <= item.Radius || Vector2.Dot(Vector2.Normalize(offset), facing) >= minimumDot)
-            {
                 yield return item;
-            }
         }
     }
 
-    private float RandomBetween(float minimum, float maximum) =>
-        minimum + (float)_random.NextDouble() * (maximum - minimum);
+    private static float RandomBetween(Random random, float minimum, float maximum) =>
+        minimum + (float)random.NextDouble() * (maximum - minimum);
 }
 
 public sealed class AgentBody(Values values)
@@ -283,3 +383,8 @@ public readonly record struct AgentStepOutcome(
     bool FoodCollected,
     bool HazardHit,
     bool Died);
+
+internal static class AgentExtensions
+{
+    public static void Let<T>(this T value, Action<T> action) where T : class => action(value);
+}

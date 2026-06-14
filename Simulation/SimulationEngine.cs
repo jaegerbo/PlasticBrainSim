@@ -12,7 +12,8 @@ public sealed class SimulationEngine
         _random = new Random(Values.RandomSeed);
 
         var adam = CreateAgent("Adam", AgentGender.Male);
-        adam.Motivations.Add(new MaximizeLifePointMotivation());
+        adam.Motivations.Add(new CuriosityMotivation(Values));
+        adam.Motivations.Add(new MaximizeLifePointMotivation(Values));
         Agents.Add(adam);
 
         for (var i = 0; i < Values.FoodObjectCount; i++) Objects.Add(CreateObject(ObjectKind.Food));
@@ -54,10 +55,10 @@ public sealed class SimulationEngine
 
     private Agent CreateAgent(string name, AgentGender gender)
     {
-        var neuronCount = _random.Next(
-            Values.AgentMinimumNeuronCount,
-            Values.AgentMaximumInitialNeuronCount + 1);
-        return new Agent(name, gender, RandomPosition(Values.SpawnMargin), neuronCount, _random.Next(), Values)
+        var hiddenNeuronCount = _random.Next(
+            Values.SemanticHiddenNeuronMinimum,
+            Values.SemanticHiddenNeuronMaximum + 1);
+        return new Agent(name, gender, RandomPosition(Values.SpawnMargin), hiddenNeuronCount, _random.Next(), Values)
         {
             Body = { Heading = (float)(_random.NextDouble() * Math.Tau) }
         };
@@ -75,14 +76,10 @@ public sealed class SimulationEngine
 
             if (item.Kind == ObjectKind.Food)
             {
-                var beforeFood = agent.Body.LifePoint;
                 agent.Body.LifePoint = MathF.Min(
                     Values.AgentMaximumLifePoint,
                     agent.Body.LifePoint + item.Food);
-                agent.Rules.LearnFromContact(
-                    item,
-                    agent.Body.LifePoint - beforeFood,
-                    StepCount);
+                agent.LearnFromContact(item, item.Food, StepCount);
                 foodCollected = true;
                 agent.Memory.Forget(item.Id);
                 ResetObject(item);
@@ -92,12 +89,8 @@ public sealed class SimulationEngine
             hazardHit = true;
 
             // The hazard attacks first. A dead agent can no longer retaliate.
-            var beforeDamage = agent.Body.LifePoint;
             agent.Body.LifePoint = MathF.Max(0f, agent.Body.LifePoint - item.Damage);
-            agent.Rules.LearnFromContact(
-                item,
-                agent.Body.LifePoint - beforeDamage,
-                StepCount);
+            agent.LearnFromContact(item, -item.Damage, StepCount);
             if (!agent.IsAlive)
             {
                 item.Position = RandomPosition(Values.ObjectSpawnMargin);
@@ -159,6 +152,7 @@ public sealed class SimulationEngine
         }
 
         item.Size = CalculateObjectSize(item);
+        item.Shape = (ObjectShape)_random.Next(Enum.GetValues<ObjectShape>().Length);
 
         if (!keepPosition) item.Position = RandomPosition(Values.ObjectSpawnMargin);
     }

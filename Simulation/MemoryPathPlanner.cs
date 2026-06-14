@@ -11,56 +11,14 @@ public sealed class MemoryPathPlanner(Values values)
         (-1, 1),  (0, 1),  (1, 1)
     ];
 
-    public PathPlan? FindBestPlan(
-        Vector2 start,
-        float lifePoint,
-        float maximumLifePoint,
-        IReadOnlyList<WorldObjectMemory> memories,
-        RuleMemory rules)
-    {
-        foreach (var memory in memories)
-        {
-            memory.EvaluatedUtility = 0f;
-            memory.IsCurrentTarget = false;
-            var assessment = rules.Assess(memory.Color, memory.Size);
-            memory.LearnedBehavior = assessment?.Behavior;
-            memory.LearnedConfidence = assessment?.Strength ?? 0f;
-        }
-
-        PathPlan? best = null;
-        foreach (var target in memories.Where(memory =>
-                     memory.LearnedBehavior == RuleBehavior.Approach))
-        {
-            var path = FindPath(start, target.Position, memories);
-            if (path.Count == 0) continue;
-
-            var pathLength = PathLength(start, path);
-            var freshness = target.RemainingLifetime /
-                            (float)Math.Max(1, values.WorldObjectMemoryLifetime);
-            var missingLife = MathF.Max(0f, maximumLifePoint - lifePoint);
-            var expectedBenefit = missingLife * target.LearnedConfidence;
-            var utility = expectedBenefit * freshness - pathLength * values.PathDistanceCost;
-
-            target.EvaluatedUtility = utility;
-            if (utility <= values.PathMinimumTargetUtility) continue;
-            if (best is null || utility > best.Utility)
-            {
-                best = new PathPlan(target, path, utility);
-            }
-        }
-
-        if (best is not null) best.Target.IsCurrentTarget = true;
-        return best;
-    }
-
-    private List<Vector2> FindPath(
+    public PathPlan? FindPath(
         Vector2 startPosition,
-        Vector2 targetPosition,
+        TargetCandidate target,
         IReadOnlyList<WorldObjectMemory> memories)
     {
         var size = Math.Max(8, values.PathGridSize);
         var start = ToCell(startPosition, size);
-        var goal = ToCell(targetPosition, size);
+        var goal = ToCell(target.Position, size);
         var blocked = BuildBlockedCells(size, memories, start, goal);
         var frontier = new PriorityQueue<GridCell, float>();
         var cameFrom = new Dictionary<GridCell, GridCell>();
@@ -69,7 +27,11 @@ public sealed class MemoryPathPlanner(Values values)
 
         while (frontier.TryDequeue(out var current, out _))
         {
-            if (current == goal) return ReconstructPath(cameFrom, current, start, targetPosition, size);
+            if (current == goal)
+            {
+                var waypoints = ReconstructPath(cameFrom, current, start, target.Position, size);
+                return new PathPlan(target, waypoints);
+            }
 
             foreach (var (x, y) in Directions)
             {
@@ -82,14 +44,12 @@ public sealed class MemoryPathPlanner(Values values)
 
                 var newCost = cost[current] + (x == 0 || y == 0 ? 1f : 1.41421356f);
                 if (cost.TryGetValue(next, out var oldCost) && newCost >= oldCost) continue;
-
                 cost[next] = newCost;
                 cameFrom[next] = current;
                 frontier.Enqueue(next, newCost + Heuristic(next, goal));
             }
         }
-
-        return [];
+        return null;
     }
 
     private HashSet<GridCell> BuildBlockedCells(
@@ -100,14 +60,14 @@ public sealed class MemoryPathPlanner(Values values)
     {
         var blocked = new HashSet<GridCell>();
         foreach (var hazard in memories.Where(memory =>
-                     memory.LearnedBehavior == RuleBehavior.Avoid))
+                     memory.LearnedBehavior == RuleBehavior.Avoid ||
+                     memory.NetworkValence < -0.2f && memory.NetworkConfidence >= 0.5f))
         {
             var radius = hazard.Size / 2f + values.AgentRadius + values.PathHazardSafetyMargin;
             var minimumX = Math.Max(0, (int)MathF.Floor((hazard.Position.X - radius) * size));
             var maximumX = Math.Min(size - 1, (int)MathF.Floor((hazard.Position.X + radius) * size));
             var minimumY = Math.Max(0, (int)MathF.Floor((hazard.Position.Y - radius) * size));
             var maximumY = Math.Min(size - 1, (int)MathF.Floor((hazard.Position.Y + radius) * size));
-
             for (var y = minimumY; y <= maximumY; y++)
             for (var x = minimumX; x <= maximumX; x++)
             {
@@ -116,7 +76,6 @@ public sealed class MemoryPathPlanner(Values values)
                     blocked.Add(cell);
             }
         }
-
         blocked.Remove(start);
         blocked.Remove(goal);
         return blocked;
@@ -135,7 +94,6 @@ public sealed class MemoryPathPlanner(Values values)
             current = cameFrom[current];
             cells.Add(current);
         }
-
         cells.Reverse();
         var path = cells.Skip(1).Select(cell => CellCenter(cell, size)).ToList();
         path.Add(exactTarget);
@@ -145,7 +103,6 @@ public sealed class MemoryPathPlanner(Values values)
     private static List<Vector2> Simplify(List<Vector2> path)
     {
         if (path.Count < 3) return path;
-
         var result = new List<Vector2> { path[0] };
         var previousDirection = Vector2.Normalize(path[1] - path[0]);
         for (var i = 1; i < path.Count - 1; i++)
@@ -161,36 +118,18 @@ public sealed class MemoryPathPlanner(Values values)
         return result;
     }
 
-    private static float PathLength(Vector2 start, IReadOnlyList<Vector2> path)
-    {
-        var length = 0f;
-        var previous = start;
-        foreach (var point in path)
-        {
-            length += Vector2.Distance(previous, point);
-            previous = point;
-        }
-        return length;
-    }
-
     private static GridCell ToCell(Vector2 position, int size) => new(
         Math.Clamp((int)(position.X * size), 0, size - 1),
         Math.Clamp((int)(position.Y * size), 0, size - 1));
-
     private static Vector2 CellCenter(GridCell cell, int size) =>
         new((cell.X + 0.5f) / size, (cell.Y + 0.5f) / size);
-
     private static float Heuristic(GridCell from, GridCell to)
     {
         var dx = Math.Abs(from.X - to.X);
         var dy = Math.Abs(from.Y - to.Y);
         return Math.Max(dx, dy) + 0.41421356f * Math.Min(dx, dy);
     }
-
     private readonly record struct GridCell(int X, int Y);
 }
 
-public sealed record PathPlan(
-    WorldObjectMemory Target,
-    IReadOnlyList<Vector2> Waypoints,
-    float Utility);
+public sealed record PathPlan(TargetCandidate Target, IReadOnlyList<Vector2> Waypoints);

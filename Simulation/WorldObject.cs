@@ -8,6 +8,13 @@ public enum ObjectKind
     Hazard
 }
 
+public enum ObjectShape
+{
+    Circle,
+    Square,
+    Triangle
+}
+
 public readonly record struct ObjectColor(byte Red, byte Green, byte Blue)
 {
     public float DistanceTo(ObjectColor other)
@@ -33,6 +40,7 @@ public sealed class WorldObject(
     public int LifePoint { get; set; } = lifePoint;
     public int Damage { get; set; } = damage;
     public ObjectColor Color { get; set; }
+    public ObjectShape Shape { get; set; }
     public float Size { get; set; }
     public float Radius => Size / 2f;
 }

@@ -21,10 +21,6 @@ public sealed class Values
     public int AgentDamageMinimum { get; set; } = 40;
     public int AgentDamageMaximum { get; set; } = 80;
     public float AgentRadius { get; set; } = 0.018f;
-    public int AgentMinimumNeuronCount { get; set; } = 240;
-    public int AgentMaximumInitialNeuronCount { get; set; } = 420;
-    public float AgentExplorationTurn { get; set; } = 0.012f;
-    public float AgentMotorTurnFactor { get; set; } = 0.055f;
     public float AgentBaseSpeed { get; set; } = 0.0012f;
     public float AgentMotorSpeedFactor { get; set; } = 0.0021f;
     public float AgentHazardTurn { get; set; } = MathF.PI * 0.7f;
@@ -49,6 +45,9 @@ public sealed class Values
     public float PathMinimumTargetUtility { get; set; } = 0.5f;
     public float PathTurnFactor { get; set; } = 0.12f;
     public float PathWaypointReachedDistance { get; set; } = 0.025f;
+    public int ExplorationMapGridSize { get; set; } = 20;
+    public float CuriosityBaseActivity { get; set; } = 0.2f;
+    public float HealthMotivationThreshold { get; set; } = 60f;
 
     // Food and hazard
     public int FoodValueMinimum { get; set; } = 10;
@@ -69,6 +68,15 @@ public sealed class Values
     public byte HazardColorBlue { get; set; } = 75;
     public int ObjectColorVariation { get; set; } = 22;
 
+    // Semantic network
+    public int SemanticHiddenNeuronMinimum { get; set; } = 10;
+    public int SemanticHiddenNeuronMaximum { get; set; } = 18;
+    public float SemanticLearningRate { get; set; } = 0.08f;
+    public int SemanticTrainingEpochsPerExperience { get; set; } = 12;
+    public int SemanticConfidenceExperienceCount { get; set; } = 6;
+    public float SemanticConfidenceDistanceFactor { get; set; } = 3.5f;
+    public float SemanticRuleConfidenceThreshold { get; set; } = 0.8f;
+
     // Rule memory
     public float RuleColorTolerance { get; set; } = 0.22f;
     public float RuleSizeTolerance { get; set; } = 0.006f;
@@ -78,29 +86,4 @@ public sealed class Values
     public float RuleTurnFactor { get; set; } = 0.18f;
     public float RuleInfluenceRange { get; set; } = 0.32f;
 
-    // Plastic network
-    public float NetworkConnectionRadius { get; set; } = 0.23f;
-    public int NetworkMinimumHiddenNeuronCount { get; set; } = 20;
-    public int NetworkMaximumOutgoingConnections { get; set; } = 18;
-    public float NetworkWeightDecay { get; set; } = 0.00008f;
-    public float NetworkActivitySmoothing { get; set; } = 0.995f;
-    public float NetworkTargetActivity { get; set; } = 0.08f;
-    public float NetworkHomeostasisRate { get; set; } = 0.0004f;
-    public float NetworkBiasMinimum { get; set; } = -0.5f;
-    public float NetworkBiasMaximum { get; set; } = 0.5f;
-    public float NetworkNoveltyGrowthThreshold { get; set; } = 0.22f;
-    public float NetworkGrowthProbability { get; set; } = 0.08f;
-    public float NetworkRewardModulation { get; set; } = 0.8f;
-    public float NetworkNoveltyModulation { get; set; } = 0.12f;
-    public float NetworkWeightLimit { get; set; } = 2.5f;
-    public float NetworkUtilitySmoothing { get; set; } = 0.999f;
-    public int NetworkSynapseMinimumAge { get; set; } = 4000;
-    public float NetworkSynapseMinimumWeight { get; set; } = 0.025f;
-    public float NetworkSynapseMinimumUtility { get; set; } = 0.002f;
-    public float NetworkTrialWeightScale { get; set; } = 0.08f;
-    public float NetworkTrialPlasticity { get; set; } = 0.0045f;
-    public int NetworkInitialConnectionsPerNeuron { get; set; } = 7;
-    public float NetworkInitialWeightScale { get; set; } = 0.55f;
-    public float NetworkInitialPlasticity { get; set; } = 0.003f;
-    public float NetworkInitialBiasScale { get; set; } = 0.03f;
 }

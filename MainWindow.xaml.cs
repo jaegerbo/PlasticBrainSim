@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.IO;
+using Microsoft.Win32;
 using PlasticBrainSim.Simulation;
 
 namespace PlasticBrainSim;
@@ -71,6 +73,48 @@ public partial class MainWindow : Window
         new ReadmeWindow { Owner = this }.Show();
     }
 
+    private void SaveAgent_Click(object sender, RoutedEventArgs e)
+    {
+        if (AgentGrid.SelectedItem is not Agent selected) return;
+        try
+        {
+            var path = AgentStorage.Save(selected);
+            MessageBox.Show(this, $"{selected.Name} wurde gespeichert:\n{path}",
+                "Agent speichern", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Speichern fehlgeschlagen",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void LoadAgent_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(AgentStorage.GetStorageDirectory());
+        var dialog = new OpenFileDialog
+        {
+            Title = "Agent laden",
+            InitialDirectory = AgentStorage.GetStorageDirectory(),
+            Filter = "Agentendateien (*.json)|*.json|Alle Dateien (*.*)|*.*"
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        try
+        {
+            var agent = AgentStorage.Load(dialog.FileName, _engine.Values);
+            _engine.Agents.Add(agent);
+            AgentGrid.Items.Refresh();
+            AgentGrid.SelectedItem = agent;
+            RefreshDisplay();
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "Laden fehlgeschlagen",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void ConnectEngine()
     {
         SpeedSlider.Value = Math.Clamp(
@@ -102,6 +146,6 @@ public partial class MainWindow : Window
         StatusText.Text = selected is null
             ? $"Schritt {_engine.StepCount:N0}"
             : $"Schritt {_engine.StepCount,8:N0}   Ausgewaehlt: {selected.Name}   " +
-              $"Belohnung {selected.LastReward,6:F3}   Netz {selected.Brain.Neurons.Count:N0} Neuronen";
+              $"Belohnung {selected.LastReward,6:F3}   Bedeutungsnetz {selected.Brain.NeuronCount:N0} Neuronen";
     }
 }

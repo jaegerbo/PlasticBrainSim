@@ -34,6 +34,7 @@ public sealed class AgentMemory(Values values)
         memory.LifePoint = item.LifePoint;
         memory.Damage = item.Damage;
         memory.Color = item.Color;
+        memory.Shape = item.Shape;
         memory.Size = item.Size;
         memory.LastSeenStep = stepNumber;
         memory.RemainingLifetime = values.WorldObjectMemoryLifetime;
@@ -41,6 +42,12 @@ public sealed class AgentMemory(Values values)
 
     public void Forget(Guid objectId) =>
         _worldObjects.RemoveAll(memory => memory.ObjectId == objectId);
+
+    public void ReplaceAll(IEnumerable<WorldObjectMemory> memories)
+    {
+        _worldObjects.Clear();
+        _worldObjects.AddRange(memories);
+    }
 }
 
 public sealed class WorldObjectMemory(Guid objectId, ObjectKind kind)
@@ -52,6 +59,7 @@ public sealed class WorldObjectMemory(Guid objectId, ObjectKind kind)
     public int LifePoint { get; set; }
     public int Damage { get; set; }
     public ObjectColor Color { get; set; }
+    public ObjectShape Shape { get; set; }
     public float Size { get; set; }
     public long LastSeenStep { get; set; }
     public int RemainingLifetime { get; set; }
@@ -59,6 +67,9 @@ public sealed class WorldObjectMemory(Guid objectId, ObjectKind kind)
     public bool IsCurrentTarget { get; set; }
     public RuleBehavior? LearnedBehavior { get; set; }
     public float LearnedConfidence { get; set; }
+    public float NetworkValence { get; set; }
+    public float NetworkConfidence { get; set; }
+    public float[] MeaningVector { get; set; } = [];
     public string Description => LearnedBehavior switch
     {
         RuleBehavior.Approach => "Als nuetzlich erkanntes Objekt",
@@ -73,5 +84,12 @@ public sealed class WorldObjectMemory(Guid objectId, ObjectKind kind)
         _ => "Keine passende gelernte Regel"
     };
     public string ColorText => $"RGB {Color.Red}, {Color.Green}, {Color.Blue}";
+    public string ShapeText => Shape switch
+    {
+        ObjectShape.Circle => "Kreis",
+        ObjectShape.Square => "Quadrat",
+        ObjectShape.Triangle => "Dreieck",
+        _ => Shape.ToString()
+    };
     public string PositionText => $"X {Position.X:F3}, Y {Position.Y:F3}";
 }

@@ -3,7 +3,30 @@
 Ein erstes Experiment fuer ein raeumlich eingebettetes neuronales Netz, das
 seine Gewichte und seine Verbindungsstruktur waehrend der Laufzeit veraendert.
 
-## Modell 0.1
+## Modell 0.2 - semantisches Netz
+
+Das neuronale Netz steuert nicht mehr direkt die Motoren. Es bewertet
+Wahrnehmungen aus Farbe, Form und Groesse auf einer Valenzskala von negativ bis
+positiv. Beim Kontakt mit einem Objekt wird die vorhergesagte Bewertung mit der
+tatsaechlich erlebten Wirkung verglichen und das Netz per Backpropagation
+trainiert.
+
+- benannte Netzmodule im Agenten; aktuell ist das Modul `Meaning` vorhanden
+- Kreise, Quadrate und Dreiecke als wahrnehmbare Objektformen
+- Netzbewertung und Sicherheit werden mit jeder Erinnerung gespeichert
+- unmittelbare Erfahrungsregeln und vorlaeufige Netzhypothesen
+- Netzhypothesen entstehen erst ab einer Sicherheit von 0,8
+- Neugier erkundet wenig besuchte Zellen einer einfachen Weltkarte
+- Lebenspunkte maximieren wird erst unterhalb des konfigurierten Schwellenwerts aktiv
+- Motivationen werden nach Aktivitaet sortiert; die aktivste Motivation waehlt Ziele
+- ein Ziel bleibt bestehen, bis ein besseres Ziel gefunden oder das Ziel erreicht wird
+- A*-Wegplanung und sichtbare Wegpunkte bleiben erhalten
+- Agenten koennen als versionierte JSON-Dateien gespeichert und geladen werden
+
+Agentendateien liegen unter `Dokumente/PlasticBrainSim/Agents` und tragen den
+Agentennamen sowie einen Zeitstempel.
+
+## Ausgangsmodell 0.1
 
 - vollstaendige Agent-Klasse mit Identitaet, Koerper, Gehirn und Motivationen
 - zufaellige initiale Netzgroesse zwischen 240 und 420 Neuronen
