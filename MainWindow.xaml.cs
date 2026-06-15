@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Input;
 using System.IO;
 using Microsoft.Win32;
 using PlasticBrainSim.Simulation;
@@ -66,6 +67,33 @@ public partial class MainWindow : Window
             NetworkView.SelectedAgent = selected;
             RefreshDisplay();
         }
+    }
+
+    private void MemoryCard_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: WorldObjectMemory memory })
+        {
+            WorldView.HighlightedObjectId = memory.ObjectId;
+            WorldView.HighlightedRule = null;
+            WorldView.InvalidateVisual();
+        }
+    }
+
+    private void RuleCard_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BehaviorRule rule })
+        {
+            WorldView.HighlightedObjectId = null;
+            WorldView.HighlightedRule = rule;
+            WorldView.InvalidateVisual();
+        }
+    }
+
+    private void Card_MouseLeave(object sender, MouseEventArgs e)
+    {
+        WorldView.HighlightedObjectId = null;
+        WorldView.HighlightedRule = null;
+        WorldView.InvalidateVisual();
     }
 
     private void ShowReadme_Click(object sender, RoutedEventArgs e)

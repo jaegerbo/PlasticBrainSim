@@ -20,6 +20,8 @@ public sealed class SimulationView : FrameworkElement
     public SimulationEngine? Engine { get; set; }
     public Agent? SelectedAgent { get; set; }
     public SimulationDisplayMode DisplayMode { get; set; } = SimulationDisplayMode.World;
+    public Guid? HighlightedObjectId { get; set; }
+    public BehaviorRule? HighlightedRule { get; set; }
 
     protected override void OnRender(DrawingContext dc)
     {
@@ -63,6 +65,10 @@ public sealed class SimulationView : FrameworkElement
             var center = Map(item.Position, rect);
             var radius = item.Radius * rect.Width;
             DrawShape(dc, item.Shape, new SolidColorBrush(ToMediaColor(item.Color)), null, center, radius);
+            if (IsHighlighted(item, engine.Values))
+            {
+                DrawShape(dc, item.Shape, null, new Pen(Brushes.Gold, 3.2), center, radius + 6);
+            }
         }
 
         foreach (var agent in engine.Agents)
@@ -75,7 +81,19 @@ public sealed class SimulationView : FrameworkElement
             var nose = body.Position + new Vector2(MathF.Cos(body.Heading), MathF.Sin(body.Heading)) * body.Radius * 1.8f;
             dc.DrawLine(new Pen(Brushes.White, 2), agentCenter, Map(nose, rect));
             DrawTitle(dc, agent.Name, agentCenter.X + agentRadius + 3, agentCenter.Y - 8);
+            DrawSmallText(dc, agent.MotivationDisplayText,
+                agentCenter.X + agentRadius + 3, agentCenter.Y + 8, Brushes.LightGray);
         }
+    }
+
+    private bool IsHighlighted(WorldObject item, Values values)
+    {
+        if (HighlightedObjectId == item.Id) return true;
+        var rule = HighlightedRule;
+        return rule is not null &&
+               rule.Shape == item.Shape &&
+               rule.Color.DistanceTo(item.Color) <= values.RuleColorTolerance &&
+               MathF.Abs(rule.Size - item.Size) <= values.RuleSizeTolerance;
     }
 
     private static void DrawPlannedPath(DrawingContext dc, Rect rect, Agent agent)
@@ -168,7 +186,23 @@ public sealed class SimulationView : FrameworkElement
         foreach (var point in inputs) dc.DrawEllipse(Brushes.MediumSeaGreen, null, point, 4, 4);
         foreach (var point in hidden) dc.DrawEllipse(Brushes.SteelBlue, null, point, 4, 4);
         dc.DrawEllipse(Brushes.Goldenrod, null, output, 6, 6);
-        DrawTitle(dc, $"Erfahrungen: {brain.ExperienceCount}", rect.X + 8, rect.Bottom - 24);
+
+        string[] inputLabels = ["Rot", "Gruen", "Blau", "Groesse", "Kreis", "Quadrat", "Dreieck"];
+        for (var i = 0; i < Math.Min(inputs.Length, inputLabels.Length); i++)
+            DrawSmallText(dc, inputLabels[i], inputs[i].X + 8, inputs[i].Y - 7, Brushes.LightGray);
+        DrawSmallText(dc, "Valenz (-1 bis +1)", output.X - 106, output.Y + 10, Brushes.LightGray);
+
+        DrawSmallText(dc, "Neuronen: Gruen = Eingang, Blau = verborgen, Gold = Ausgang",
+            rect.X + 8, rect.Bottom - 76, Brushes.LightGray);
+        DrawSmallText(dc, $"Erfahrungen: {brain.ExperienceCount}", rect.X + 8, rect.Bottom - 58, Brushes.White);
+        DrawSmallText(dc, "Verbindungen:", rect.X + 8, rect.Bottom - 40, Brushes.White);
+        dc.DrawLine(new Pen(new SolidColorBrush(Color.FromRgb(80, 170, 255)), 2),
+            new Point(rect.X + 88, rect.Bottom - 34), new Point(rect.X + 112, rect.Bottom - 34));
+        DrawSmallText(dc, "positives Gewicht", rect.X + 118, rect.Bottom - 41, Brushes.LightGray);
+        dc.DrawLine(new Pen(new SolidColorBrush(Color.FromRgb(255, 105, 100)), 2),
+            new Point(rect.X + 232, rect.Bottom - 34), new Point(rect.X + 256, rect.Bottom - 34));
+        DrawSmallText(dc, "negatives Gewicht", rect.X + 262, rect.Bottom - 41, Brushes.LightGray);
+        DrawSmallText(dc, "Staerkere Farbe = groesseres Gewicht", rect.X + 8, rect.Bottom - 20, Brushes.Gray);
     }
 
     private static void DrawWeight(DrawingContext dc, Point start, Point end, float weight)
@@ -220,5 +254,12 @@ public sealed class SimulationView : FrameworkElement
     {
         dc.DrawText(new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
             new Typeface("Segoe UI Semibold"), 14, Brushes.White, 1.0), new Point(x, y));
+    }
+
+    private static void DrawSmallText(DrawingContext dc, string text, double x, double y, Brush brush)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        dc.DrawText(new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface("Segoe UI"), 11, brush, 1.0), new Point(x, y));
     }
 }

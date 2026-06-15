@@ -60,6 +60,12 @@ public sealed class Agent
         .OrderByDescending(motivation => motivation.LastActivity)
         .Select(motivation => $"{motivation.Name} ({motivation.LastActivity:F2})"));
     public string ActiveMotivationName { get; private set; } = "-";
+    public string MotivationDisplayText => ActiveMotivationName switch
+    {
+        "Neugier" => "ist neugierig",
+        "Lebenspunkte maximieren" => "hat Hunger",
+        _ => ""
+    };
     public string LastRuleAction { get; private set; } = "-";
     public SemanticTrainingResult? LastTraining { get; private set; }
     public long MovementDecisionCount { get; private set; }

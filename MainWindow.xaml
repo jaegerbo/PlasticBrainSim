@@ -64,55 +64,63 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#151B23" Foreground="White">
                             <Grid x:Name="AgentStatusPanel" Margin="18">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="18"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.ColumnSpan="2" Text="Identitaet und Koerper" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <TextBlock Grid.Row="1" Text="Name"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Name, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="2" Text="Geschlecht"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Gender, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="3" Text="Lebenspunkte"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Body.LifePoint, Mode=OneWay, StringFormat=F1}"/>
-                                <TextBlock Grid.Row="4" Text="Damage"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Damage, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="5" Text="Position"/><TextBlock x:Name="AgentPositionText" Grid.Row="5" Grid.Column="1"/>
-                                <TextBlock Grid.Row="6" Text="Sichtwinkel"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding VisionAngleDegrees, Mode=OneWay, StringFormat={}{0:F1} Grad}"/>
-                                <TextBlock Grid.Row="7" Text="Sichtreichweite"/><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding VisionRange, Mode=OneWay, StringFormat=F3}"/>
+                                <Grid Grid.Column="0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.ColumnSpan="2" Text="Identitaet und Koerper" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Grid.Row="1" Text="Name"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Name, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="2" Text="Geschlecht"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Gender, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="3" Text="Lebenspunkte"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Body.LifePoint, Mode=OneWay, StringFormat=F1}"/>
+                                    <TextBlock Grid.Row="4" Text="Damage"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Damage, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="5" Text="Position"/><TextBlock x:Name="AgentPositionText" Grid.Row="5" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="6" Text="Sichtwinkel"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding VisionAngleDegrees, Mode=OneWay, StringFormat={}{0:F1} Grad}"/>
+                                    <TextBlock Grid.Row="7" Text="Sichtreichweite"/><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding VisionRange, Mode=OneWay, StringFormat=F3}"/>
+                                </Grid>
 
-                                <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="Lernen und Verhalten" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8"/>
-                                <TextBlock Grid.Row="9" Text="Neuronen"/><TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding Brain.NeuronCount, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="10" Text="Synapsen"/><TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Brain.SynapseCount, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="11" Text="Neuigkeit"/><TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding LastNovelty, Mode=OneWay, StringFormat=F3}"/>
-                                <TextBlock Grid.Row="12" Text="Belohnung"/><TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding LastReward, Mode=OneWay, StringFormat=F3}"/>
-                                <TextBlock Grid.Row="13" Text="Regelaktion"/><TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding LastRuleAction, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="14" Text="Motivationen"/><TextBlock Grid.Row="14" Grid.Column="1" Text="{Binding MotivationNames, Mode=OneWay}" TextWrapping="Wrap"/>
-                                <TextBlock Grid.Row="15" Text="Erinnerungen"/><TextBlock Grid.Row="15" Grid.Column="1" Text="{Binding Memory.WorldObjects.Count, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="16" Text="Regeln"/><TextBlock Grid.Row="16" Grid.Column="1" Text="{Binding Rules.Rules.Count, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="17" Text="Nahrung / Schaden"/><TextBlock x:Name="AgentExperienceText" Grid.Row="17" Grid.Column="1"/>
-                                <TextBlock Grid.Row="18" Text="Aktive Motivation"/>
-                                <TextBlock Grid.Row="18" Grid.Column="1" Text="{Binding ActiveMotivationName, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="19" Text="Aktuelles Ziel"/>
-                                <TextBlock Grid.Row="19" Grid.Column="1" Text="{Binding CurrentTargetText, Mode=OneWay}" TextWrapping="Wrap"/>
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="125"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.ColumnSpan="2" Text="Lernen und Verhalten" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Grid.Row="1" Text="Neuronen"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Brain.NeuronCount, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="2" Text="Synapsen"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Brain.SynapseCount, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="3" Text="Neuigkeit"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastNovelty, Mode=OneWay, StringFormat=F3}"/>
+                                    <TextBlock Grid.Row="4" Text="Belohnung"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LastReward, Mode=OneWay, StringFormat=F3}"/>
+                                    <TextBlock Grid.Row="5" Text="Regelaktion"/><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding LastRuleAction, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="6" Text="Motivationen"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding MotivationNames, Mode=OneWay}" TextWrapping="Wrap"/>
+                                    <TextBlock Grid.Row="7" Text="Erinnerungen"/><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Memory.WorldObjects.Count, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="8" Text="Regeln"/><TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding Rules.Rules.Count, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="9" Text="Nahrung / Schaden"/><TextBlock x:Name="AgentExperienceText" Grid.Row="9" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="10" Text="Aktive Motivation"/><TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding ActiveMotivationName, Mode=OneWay}"/>
+                                    <TextBlock Grid.Row="11" Text="Aktuelles Ziel"/><TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding CurrentTargetText, Mode=OneWay}" TextWrapping="Wrap"/>
+                                </Grid>
 
-                                <TabControl Grid.Row="20" Grid.ColumnSpan="2" Margin="0,14,0,0"
+                                <TabControl Grid.Row="1" Grid.ColumnSpan="3" Margin="0,14,0,0"
                                             Background="#151B23" BorderBrush="#303A46">
-                                    <TabItem Header="Regeln">
+                                    <TabItem><TabItem.Header><TextBlock Text="Regeln" Foreground="Black"/></TabItem.Header>
                                         <ItemsControl ItemsSource="{Binding Rules.Rules, Mode=OneWay}" Margin="8">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Margin="0,3" Padding="10" Background="#1B232D"
-                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4">
+                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4"
+                                                            MouseEnter="RuleCard_MouseEnter" MouseLeave="Card_MouseLeave">
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="54"/>
@@ -128,40 +136,32 @@
                                                                     </MultiBinding>
                                                                 </Border.Background>
                                                             </Border>
-                                                            <StackPanel Grid.Column="1">
-                                                                <TextBlock Text="{Binding Description, Mode=OneWay}" FontWeight="SemiBold"/>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Form: "/><Run Text="{Binding Shape, Mode=OneWay}"/>
-                                                                    <Run Text="   Quelle: "/><Run Text="{Binding SourceText, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF" Margin="0,3,0,0">
-                                                                    <Run Text="Farbe: "/><Run Text="{Binding ColorText, Mode=OneWay}"/>
-                                                                    <Run Text="  ("/><Run Text="{Binding ColorToleranceText, Mode=OneWay}"/><Run Text=")"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Groessenbereich: "/><Run Text="{Binding SizeRangeText, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Staerke: "/><Run Text="{Binding Strength, Mode=OneWay, StringFormat=F2}"/>
-                                                                    <Run Text="   Belege: "/><Run Text="{Binding EvidenceCount, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#8996A5" FontSize="11">
-                                                                    <Run Text="Erstellt bei Schritt "/><Run Text="{Binding CreatedAtStep, Mode=OneWay}"/>
-                                                                    <Run Text="   zuletzt bestaetigt "/><Run Text="{Binding LastConfirmedStep, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                            </StackPanel>
+                                                            <Grid Grid.Column="1">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="1.15*"/></Grid.ColumnDefinitions>
+                                                                <StackPanel>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Form: "/><Run Text="{Binding Shape, Mode=OneWay}"/><Run Text="   Quelle: "/><Run Text="{Binding SourceText, Mode=OneWay}"/></TextBlock>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Staerke: "/><Run Text="{Binding Strength, Mode=OneWay, StringFormat=F2}"/><Run Text="   Belege: "/><Run Text="{Binding EvidenceCount, Mode=OneWay}"/></TextBlock>
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="2">
+                                                                    <TextBlock Text="{Binding Description, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Farbe: "/><Run Text="{Binding ColorText, Mode=OneWay}"/><Run Text="  ("/><Run Text="{Binding ColorToleranceText, Mode=OneWay}"/><Run Text=")"/></TextBlock>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Groessenbereich: "/><Run Text="{Binding SizeRangeText, Mode=OneWay}"/></TextBlock>
+                                                                    <TextBlock Foreground="#8996A5" FontSize="11"><Run Text="Erstellt bei Schritt "/><Run Text="{Binding CreatedAtStep, Mode=OneWay}"/><Run Text="   zuletzt bestaetigt "/><Run Text="{Binding LastConfirmedStep, Mode=OneWay}"/></TextBlock>
+                                                                </StackPanel>
+                                                            </Grid>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </TabItem>
-                                    <TabItem Header="Erinnerungen">
+                                    <TabItem><TabItem.Header><TextBlock Text="Erinnerungen" Foreground="Black"/></TabItem.Header>
                                         <ItemsControl ItemsSource="{Binding Memory.WorldObjects, Mode=OneWay}" Margin="8">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Margin="0,3" Padding="10" Background="#1B232D"
-                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4">
+                                                            BorderBrush="#303A46" BorderThickness="1" CornerRadius="4"
+                                                            MouseEnter="MemoryCard_MouseEnter" MouseLeave="Card_MouseLeave">
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="54"/>
@@ -177,36 +177,22 @@
                                                                     </MultiBinding>
                                                                 </Border.Background>
                                                             </Border>
-                                                            <StackPanel Grid.Column="1">
-                                                                <TextBlock Text="{Binding Description, Mode=OneWay}" FontWeight="SemiBold"/>
-                                                                <TextBlock Text="{Binding TargetText, Mode=OneWay}" Foreground="#FFD750" FontWeight="SemiBold"/>
-                                                                <TextBlock Text="{Binding LearnedMeaningText, Mode=OneWay}" Foreground="#B9C4CF"/>
-                                                                <TextBlock Foreground="#B9C4CF" Margin="0,3,0,0">
-                                                                    <Run Text="Farbe: "/><Run Text="{Binding ColorText, Mode=OneWay}"/>
-                                                                    <Run Text="   Form: "/><Run Text="{Binding ShapeText, Mode=OneWay}"/>
-                                                                    <Run Text="   Groesse: "/><Run Text="{Binding Size, Mode=OneWay, StringFormat=F3}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Position: "/><Run Text="{Binding PositionText, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Nahrung: "/><Run Text="{Binding Food, Mode=OneWay}"/>
-                                                                    <Run Text="   Schaden: "/><Run Text="{Binding Damage, Mode=OneWay}"/>
-                                                                    <Run Text="   Lebenspunkte: "/><Run Text="{Binding LifePoint, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#8996A5" FontSize="11">
-                                                                    <Run Text="Zuletzt gesehen bei Schritt "/><Run Text="{Binding LastSeenStep, Mode=OneWay}"/>
-                                                                    <Run Text="   verbleibend: "/><Run Text="{Binding RemainingLifetime, Mode=OneWay}"/>
-                                                                    <Run Text=" Schritte"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Bewerteter Nutzen: "/><Run Text="{Binding EvaluatedUtility, Mode=OneWay, StringFormat=F2}"/>
-                                                                </TextBlock>
-                                                                <TextBlock Foreground="#B9C4CF">
-                                                                    <Run Text="Netzbewertung: "/><Run Text="{Binding NetworkValence, Mode=OneWay, StringFormat=F3}"/>
-                                                                    <Run Text="   Sicherheit: "/><Run Text="{Binding NetworkConfidence, Mode=OneWay, StringFormat=F3}"/>
-                                                                </TextBlock>
-                                                            </StackPanel>
+                                                            <Grid Grid.Column="1">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="1.15*"/></Grid.ColumnDefinitions>
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{Binding LearnedMeaningText, Mode=OneWay}" Foreground="#B9C4CF"/>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Nahrung: "/><Run Text="{Binding Food, Mode=OneWay}"/><Run Text="   Schaden: "/><Run Text="{Binding Damage, Mode=OneWay}"/><Run Text="   Lebenspunkte: "/><Run Text="{Binding LifePoint, Mode=OneWay}"/></TextBlock>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Bewerteter Nutzen: "/><Run Text="{Binding EvaluatedUtility, Mode=OneWay, StringFormat=F2}"/></TextBlock>
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="2">
+                                                                    <TextBlock Text="{Binding Description, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding TargetText, Mode=OneWay}" Foreground="#FFD750" FontWeight="SemiBold"/>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Farbe: "/><Run Text="{Binding ColorText, Mode=OneWay}"/><Run Text="   Form: "/><Run Text="{Binding ShapeText, Mode=OneWay}"/><Run Text="   Groesse: "/><Run Text="{Binding Size, Mode=OneWay, StringFormat=F3}"/></TextBlock>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Position: "/><Run Text="{Binding PositionText, Mode=OneWay}"/></TextBlock>
+                                                                    <TextBlock Foreground="#8996A5" FontSize="11"><Run Text="Zuletzt gesehen: "/><Run Text="{Binding LastSeenStep, Mode=OneWay}"/><Run Text="   verbleibend: "/><Run Text="{Binding RemainingLifetime, Mode=OneWay}"/><Run Text=" Schritte"/></TextBlock>
+                                                                    <TextBlock Foreground="#B9C4CF"><Run Text="Netzbewertung: "/><Run Text="{Binding NetworkValence, Mode=OneWay, StringFormat=F3}"/><Run Text="   Sicherheit: "/><Run Text="{Binding NetworkConfidence, Mode=OneWay, StringFormat=F3}"/></TextBlock>
+                                                                </StackPanel>
+                                                            </Grid>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
